@@ -1,46 +1,55 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function NewCampsitePage() {
-  const router = useRouter();
+export default function EditCampsitePage() {
+  const { id }  = useParams();
+  const router  = useRouter();
 
-  const [facilities,  setFacilities]  = useState([]);
-  const [selectedFacs, setSelectedFacs] = useState([]); // pill-style (จาก V1)
-  const [submitting,  setSubmitting]  = useState(false);
-  const [error,       setError]       = useState('');
+  const [facilities,   setFacilities]   = useState([]);
+  const [selectedFacs, setSelectedFacs] = useState([]);
+  const [form,         setForm]         = useState(null);
+  const [submitting,   setSubmitting]   = useState(false);
+  const [error,        setError]        = useState('');
 
-  const [form, setForm] = useState({
-    name:        '',
-    type:        'เต็นท์',
-    capacity:    4,          // default 4 (จาก V1)
-    price_night: '',
-    image:       '',
-    description: '',
-  });
-
+  /* โหลด facilities + ข้อมูลเดิมพร้อมกัน (จาก V1 — Promise.all) */
   useEffect(() => {
-    fetch('/api/facilities')
-      .then(r => r.json())
-      .then(setFacilities)
-      .catch(() => {});
-  }, []);
+    Promise.all([
+      fetch('/api/facilities').then(r => r.json()),
+      fetch(`/api/campsites/${id}`).then(r => r.json()),
+    ]).then(([facs, site]) => {
+      setFacilities(facs);
+      setForm({
+        name:        site.name        ?? '',
+        type:        site.type        ?? 'เต็นท์',
+        capacity:    site.capacity    ?? 1,
+        price_night: site.price_night ?? '',
+        image:       site.image       ?? '',
+        description: site.description ?? '',
+        status:      site.status      ?? 'available',
+      });
+      /* prefill facilities ที่เลือกอยู่ (จาก V1) */
+      const ids = site.fac_ids
+        ? site.fac_ids.split(',').map(Number)
+        : [];
+      setSelectedFacs(ids);
+    }).catch(() => {});
+  }, [id]);
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
   /* Pill toggle (จาก V1) */
-  function toggleFac(id) {
+  function toggleFac(fid) {
     setSelectedFacs(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+      prev.includes(fid) ? prev.filter(x => x !== fid) : [...prev, fid]
     );
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    /* validate แยกรายการ (จาก V2) */
     if (!form.name.trim())  return setError('กรุณากรอกชื่อที่พัก');
     if (!form.capacity)     return setError('กรุณากรอกความจุ');
     if (!form.price_night)  return setError('กรุณากรอกราคา/คืน');
@@ -48,22 +57,21 @@ export default function NewCampsitePage() {
     setError('');
     setSubmitting(true);
     try {
-      const res = await fetch('/api/campsites', {
-        method:  'POST',
+      const res = await fetch(`/api/campsites/${id}`, {
+        method:  'PUT',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           ...form,
           capacity:    Number(form.capacity),
           price_night: Number(form.price_night),
-          facilities:  selectedFacs,   // ส่ง array ไป API
+          facilities:  selectedFacs,
         }),
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'เกิดข้อผิดพลาด');
       }
-      const data = await res.json();
-      router.push(`/campsites/${data.id}`); // redirect ไป detail (จาก V1)
+      router.push(`/campsites/${id}`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -71,17 +79,21 @@ export default function NewCampsitePage() {
     }
   }
 
+  if (!form) return (
+    <p style={{ textAlign: 'center', padding: '3rem' }}>⏳ กำลังโหลด...</p>
+  );
+
   return (
     <div className="page-body">
       <div className="container">
 
         {/* breadcrumb */}
         <div style={{ marginBottom: 16, fontSize: 13, color: 'var(--text-muted)' }}>
-          <Link href="/campsites" style={{ color: 'var(--green)' }}>← กลับ</Link>
+          <Link href={`/campsites/${id}`} style={{ color: 'var(--green)' }}>← ยกเลิกและกลับ</Link>
         </div>
 
         <div className="page-card">
-          <h1 className="page-card-title">เพิ่มที่พักใหม่</h1>
+          <h1 className="page-card-title">✏️ แก้ไขที่พัก</h1>
 
           <form onSubmit={handleSubmit}>
 
@@ -90,7 +102,6 @@ export default function NewCampsitePage() {
               <div className="form-group">
                 <label className="form-label" htmlFor="name">ชื่อที่พัก *</label>
                 <input id="name" name="name" className="form-input"
-                  placeholder="เช่น Zone A — ริมลำธาร"
                   value={form.name} onChange={handleChange} required />
               </div>
               <div className="form-group">
@@ -104,27 +115,36 @@ export default function NewCampsitePage() {
               </div>
             </div>
 
-            {/* ความจุ + ราคา */}
-            <div className="form-grid-2">
+            {/* ความจุ + ราคา + สถานะ */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
               <div className="form-group">
                 <label className="form-label" htmlFor="capacity">ความจุ (คน) *</label>
                 <input id="capacity" name="capacity" type="number" min={1}
-                  className="form-input" placeholder="4"
+                  className="form-input"
                   value={form.capacity} onChange={handleChange} required />
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="price_night">ราคา/คืน (฿) *</label>
                 <input id="price_night" name="price_night" type="number" min={0}
-                  className="form-input" placeholder="800"
+                  className="form-input"
                   value={form.price_night} onChange={handleChange} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="status">สถานะ</label>
+                <select id="status" name="status" className="form-select"
+                  value={form.status} onChange={handleChange}>
+                  <option value="available">ว่าง</option>
+                  <option value="full">เต็ม</option>
+                </select>
               </div>
             </div>
 
-            {/* รูปภาพ URL + preview (จาก V2 — ratio 4:3 + error fallback) */}
+            {/* รูปภาพ URL + preview (ratio 4:3 + error fallback) */}
             <div className="form-group">
               <label className="form-label" htmlFor="image">รูปภาพ URL</label>
               <input id="image" name="image" className="form-input"
-                placeholder="https://..." value={form.image} onChange={handleChange} />
+                placeholder="https://..."
+                value={form.image} onChange={handleChange} />
               {form.image && (
                 <div style={{
                   marginTop: 10, borderRadius: 10, overflow: 'hidden',
@@ -150,7 +170,7 @@ export default function NewCampsitePage() {
               )}
             </div>
 
-            {/* Facilities — pill button style (จาก V1) */}
+            {/* Facilities — pill button style */}
             {facilities.length > 0 && (
               <div className="form-group">
                 <label className="form-label">สิ่งอำนวยความสะดวก</label>
@@ -189,7 +209,7 @@ export default function NewCampsitePage() {
                 value={form.description} onChange={handleChange} />
             </div>
 
-            {/* Error (styled จาก V2) */}
+            {/* Error */}
             {error && (
               <p style={{
                 color: 'var(--danger)', fontSize: 13,
@@ -198,12 +218,15 @@ export default function NewCampsitePage() {
               }}>{error}</p>
             )}
 
-            {/* Submit */}
-            <button type="submit" className="btn btn-primary"
-              disabled={submitting}
-              style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
-              {submitting ? '⏳ กำลังบันทึก...' : 'บันทึกที่พัก'}
-            </button>
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Link href={`/campsites/${id}`} className="btn btn-outline">ยกเลิก</Link>
+              <button type="submit" className="btn btn-primary"
+                disabled={submitting}
+                style={{ flex: 1, justifyContent: 'center' }}>
+                {submitting ? '⏳ กำลังบันทึก...' : '💾 บันทึกการแก้ไข'}
+              </button>
+            </div>
 
           </form>
         </div>

@@ -173,10 +173,14 @@ export default function BookPage() {
                   name="guest_name"
                   className="form-input"
                   placeholder="ชื่อ-นามสกุล"
+                  maxLength={50}
                   value={form.guest_name}
                   onChange={handleChange}
                   required
                 />
+                <p style={{ fontSize: 11, color: form.guest_name.length > 45 ? 'var(--danger)' : 'var(--text-muted)', textAlign: 'right', marginTop: 3 }}>
+                  {form.guest_name.length}/50
+                </p>
               </div>
               <div className="form-group">
                 <label className="form-label">เบอร์โทรศัพท์</label>
@@ -184,10 +188,16 @@ export default function BookPage() {
                   id="phone"
                   name="phone"
                   className="form-input"
-                  placeholder="0xx-xxx-xxxx"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="0xxxxxxxxx"
                   value={form.phone}
                   onChange={handleChange}
+                  onInput={e => { e.target.value = e.target.value.replace(/\D/g, ''); }}
                 />
+                <p style={{ fontSize: 11, color: form.phone.length === 10 ? 'var(--green-dark)' : 'var(--text-muted)', textAlign: 'right', marginTop: 3 }}>
+                  {form.phone.length}/10
+                </p>
               </div>
             </div>
 
