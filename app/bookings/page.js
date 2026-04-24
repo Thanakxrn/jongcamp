@@ -83,7 +83,7 @@ export default function BookingsPage() {
   async function saveEdit() {
     setSaving(true);
     await fetch(`/api/bookings/${editTarget.id}`, {
-      method:  'PUT',
+      method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(editForm),
     });

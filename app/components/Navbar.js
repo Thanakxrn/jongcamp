@@ -4,38 +4,28 @@ import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
   const path = usePathname();
+  const links = [
+    { href: '/dashboard',  label: '📊 Dashboard' },
+    { href: '/campsites',  label: '🏕️ ที่พัก'    },
+    { href: '/bookings',   label: '🧾 การจอง'  },
+    { href: '/facilities', label: '⚙️ สิ่งอำนวยฯ' },
+  ];
 
   return (
     <nav className="navbar">
       <div className="container navbar-inner">
-        <Link href="/campsites" className="navbar-logo">
+        <Link href="/dashboard" className="navbar-logo">
           🏕️ JongCamp
         </Link>
         <div className="navbar-links">
-          <Link
-            href="/campsites"
-            className={`navbar-link ${
-              path.startsWith('/campsites') ? 'active' : ''
-            }`}
-          >
-            🏕️ ที่พัก
-          </Link>
-          <Link
-            href="/bookings"
-            className={`navbar-link ${
-              path.startsWith('/bookings') ? 'active' : ''
-            }`}
-          >
-            🧾 การจอง
-          </Link>
-          <Link
-            href="/facilities"
-            className={`navbar-link ${
-              path.startsWith('/facilities') ? 'active' : ''
-            }`}
-          >
-            ⚙️ สิ่งอำนวยฯ
-          </Link>
+          {links.map(({ href, label }) => (
+            <Link key={href} href={href}
+              className={`navbar-link ${
+                path.startsWith(href) ? 'active' : ''
+              }`}>
+              {label}
+            </Link>
+          ))}
         </div>
       </div>
     </nav>
