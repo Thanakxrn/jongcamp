@@ -42,6 +42,24 @@ export async function POST(request) {
         { error: 'Campsite not found' }, { status: 404 }
       );
 
+    // ── ตรวจสอบการจองทับซ้อน ──────────────────────────────────
+    // หา booking ที่ confirmed/pending ที่วันทับกับช่วงที่ขอจอง
+    const [overlap] = await pool.query(`
+      SELECT COUNT(*) AS cnt FROM bookings
+      WHERE campsite_id = ?
+        AND status IN ('confirmed', 'pending')
+        AND check_in  < ?
+        AND check_out > ?
+    `, [campsite_id, check_out, check_in]);
+
+    if (overlap[0].cnt > 0) {
+      return NextResponse.json(
+        { error: 'ที่พักนี้มีการจองในช่วงวันที่เลือกแล้ว กรุณาเลือกวันอื่น' },
+        { status: 409 }
+      );
+    }
+    // ──────────────────────────────────────────────────────────
+
     // คำนวณ total = DATEDIFF × price_night
     const [diff] = await pool.query(
       'SELECT DATEDIFF(?, ?) AS nights',

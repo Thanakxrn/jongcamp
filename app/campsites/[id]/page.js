@@ -182,88 +182,114 @@ export default function CampsiteDetailPage() {
 
       <hr style={{ border: 'none', borderTop: '1px solid var(--border)', marginBottom: 28 }} />
 
-      {/* ══ Booking Form ══ */}
-      <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 18 }}>จองที่พักนี้</h2>
-
-      <form onSubmit={handleSubmit}>
-
-        {/* ชื่อ + เบอร์ */}
-        <div className="form-grid-2" style={{ marginBottom: 14 }}>
-          <div className="form-group">
-            <label className="form-label">ชื่อผู้จอง *</label>
-            <input id="guest_name" name="guest_name" className="form-input"
-              placeholder="ชื่อ-นามสกุล" value={form.guest_name}
-              maxLength={50} onChange={handleChange} required />
-            <p style={{ fontSize: 11, color: form.guest_name.length > 45 ? 'var(--danger)' : 'var(--text-muted)', textAlign: 'right', marginTop: 3 }}>
-              {form.guest_name.length}/50
-            </p>
-          </div>
-          <div className="form-group">
-            <label className="form-label">เบอร์โทร</label>
-            <input id="phone" name="phone" className="form-input"
-              inputMode="numeric" maxLength={10}
-              placeholder="0xxxxxxxxx" value={form.phone}
-              onChange={handleChange}
-              onInput={e => { e.target.value = e.target.value.replace(/\D/g, ''); }} />
-            <p style={{ fontSize: 11, color: form.phone.length === 10 ? 'var(--green-dark)' : 'var(--text-muted)', textAlign: 'right', marginTop: 3 }}>
-              {form.phone.length}/10
-            </p>
-          </div>
+      {/* ══ Booking Form / Not Available Banner ══ */}
+      {site.status !== 'available' ? (
+        /* ── ป้ายไม่ว่าง ── */
+        <div style={{
+          background: '#fff5f5',
+          border: '1.5px solid #fca5a5',
+          borderRadius: 12,
+          padding: '24px 20px',
+          textAlign: 'center',
+          marginTop: 8,
+        }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
+          <h2 style={{ fontSize: 17, fontWeight: 700, color: '#b91c1c', marginBottom: 8 }}>
+            ที่พักนี้ไม่ว่างในขณะนี้
+          </h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18 }}>
+            มีผู้เข้าพักอยู่แล้ว ยังไม่สามารถจองได้<br />
+            กรุณารอจนกว่าที่พักจะว่าง หรือเลือกที่พักอื่น
+          </p>
+          <Link href="/campsites" className="btn btn-outline">← เลือกที่พักอื่น</Link>
         </div>
+      ) : (
+        /* ── Form จอง ── */
+        <>
+          <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 18 }}>จองที่พักนี้</h2>
 
-        {/* วันที่ + จำนวนคน */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-          <div className="form-group">
-            <label className="form-label">เช็คอิน *</label>
-            <input id="check_in" name="check_in" type="date" className="form-input"
-              value={form.check_in} min={today} onChange={handleChange} required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">เช็คเอาท์ *</label>
-            <input id="check_out" name="check_out" type="date" className="form-input"
-              value={form.check_out} min={form.check_in || today} onChange={handleChange} required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">จำนวนคน</label>
-            <input id="guests" name="guests" type="number" className="form-input"
-              min={1} max={site.capacity} value={form.guests} onChange={handleChange} required />
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-              สูงสุด {site.capacity} คน
-            </p>
-          </div>
-        </div>
+          <form onSubmit={handleSubmit}>
 
-        {/* Price calc */}
-        <div className="price-calc" style={{ marginBottom: 14 }}>
-          <span>
-            {nights > 0
-              ? `฿${Number(site.price_night).toLocaleString()} × ${nights} คืน`
-              : 'เลือกวันให้ครบก่อน'}
-          </span>
-          <span className="total">
-            {nights > 0 ? `฿${total.toLocaleString()}` : '—'}
-          </span>
-        </div>
+            {/* ชื่อ + เบอร์ */}
+            <div className="form-grid-2" style={{ marginBottom: 14 }}>
+              <div className="form-group">
+                <label className="form-label">ชื่อผู้จอง *</label>
+                <input id="guest_name" name="guest_name" className="form-input"
+                  placeholder="ชื่อ-นามสกุล" value={form.guest_name}
+                  maxLength={50} onChange={handleChange} required />
+                <p style={{ fontSize: 11, color: form.guest_name.length > 45 ? 'var(--danger)' : 'var(--text-muted)', textAlign: 'right', marginTop: 3 }}>
+                  {form.guest_name.length}/50
+                </p>
+              </div>
+              <div className="form-group">
+                <label className="form-label">เบอร์โทร</label>
+                <input id="phone" name="phone" className="form-input"
+                  inputMode="numeric" maxLength={10}
+                  placeholder="0xxxxxxxxx" value={form.phone}
+                  onChange={handleChange}
+                  onInput={e => { e.target.value = e.target.value.replace(/\D/g, ''); }} />
+                <p style={{ fontSize: 11, color: form.phone.length === 10 ? 'var(--green-dark)' : 'var(--text-muted)', textAlign: 'right', marginTop: 3 }}>
+                  {form.phone.length}/10
+                </p>
+              </div>
+            </div>
 
-        {/* Error */}
-        {error && (
-          <p style={{
-            color: 'var(--danger)', fontSize: 13,
-            background: '#fff5f5', border: '1px solid #fcc',
-            borderRadius: 8, padding: '8px 12px', marginBottom: 14,
-          }}>{error}</p>
-        )}
+            {/* วันที่ + จำนวนคน */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
+              <div className="form-group">
+                <label className="form-label">เช็คอิน *</label>
+                <input id="check_in" name="check_in" type="date" className="form-input"
+                  value={form.check_in} min={today} onChange={handleChange} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">เช็คเอาท์ *</label>
+                <input id="check_out" name="check_out" type="date" className="form-input"
+                  value={form.check_out} min={form.check_in || today} onChange={handleChange} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">จำนวนคน</label>
+                <input id="guests" name="guests" type="number" className="form-input"
+                  min={1} max={site.capacity} value={form.guests} onChange={handleChange} required />
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                  สูงสุด {site.capacity} คน
+                </p>
+              </div>
+            </div>
 
-        {/* Submit */}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <Link href="/campsites" className="btn btn-outline">ยกเลิก</Link>
-          <button type="submit" className="btn btn-primary"
-            disabled={submitting || nights <= 0}>
-            {submitting ? '⏳ กำลังจอง...' : '✅ ยืนยันการจอง'}
-          </button>
-        </div>
+            {/* Price calc */}
+            <div className="price-calc" style={{ marginBottom: 14 }}>
+              <span>
+                {nights > 0
+                  ? `฿${Number(site.price_night).toLocaleString()} × ${nights} คืน`
+                  : 'เลือกวันให้ครบก่อน'}
+              </span>
+              <span className="total">
+                {nights > 0 ? `฿${total.toLocaleString()}` : '—'}
+              </span>
+            </div>
 
-      </form>
+            {/* Error */}
+            {error && (
+              <p style={{
+                color: 'var(--danger)', fontSize: 13,
+                background: '#fff5f5', border: '1px solid #fcc',
+                borderRadius: 8, padding: '8px 12px', marginBottom: 14,
+              }}>{error}</p>
+            )}
+
+            {/* Submit */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Link href="/campsites" className="btn btn-outline">ยกเลิก</Link>
+              <button type="submit" className="btn btn-primary"
+                disabled={submitting || nights <= 0}>
+                {submitting ? '⏳ กำลังจอง...' : '✅ ยืนยันการจอง'}
+              </button>
+            </div>
+
+          </form>
+        </>
+      )}
+
     </div>
 
       {/* ══ Delete Confirm Modal ══ */}
