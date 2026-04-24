@@ -5,10 +5,9 @@ import { usePathname } from 'next/navigation';
 export default function Navbar() {
   const path = usePathname();
   const links = [
-    { href: '/dashboard',  label: '📊 Dashboard' },
-    { href: '/campsites',  label: '🏕️ ที่พัก'    },
-    { href: '/bookings',   label: '🧾 การจอง'  },
-    { href: '/facilities', label: '⚙️ สิ่งอำนวยฯ' },
+    { href: '/dashboard', label: '📊 Dashboard' },
+    { href: '/campsites', label: '🏕️ ที่พัก' },
+    { href: '/bookings', label: '🧾 การจอง' },
   ];
 
   return (
@@ -20,9 +19,7 @@ export default function Navbar() {
         <div className="navbar-links">
           {links.map(({ href, label }) => (
             <Link key={href} href={href}
-              className={`navbar-link ${
-                path.startsWith(href) ? 'active' : ''
-              }`}>
+              className={`navbar-link ${path.startsWith(href) ? 'active' : ''}`}>
               {label}
             </Link>
           ))}
