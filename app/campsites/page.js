@@ -140,40 +140,93 @@ export default function CampsitesPage() {
         </div>
       ) : (
         <div className="campsite-grid">
-          {filtered.map(item => (
-            <div key={item.id} style={{ position: 'relative' }}>
+          {filtered.map(item => {
+            const isFull = item.status !== 'available';
+            return (
+              <div key={item.id} style={{ position: 'relative' }}>
 
-              <Link href={`/campsites/${item.id}`} className="campsite-card" style={{ display: 'block', textDecoration: 'none' }}>
-                {/* รูปภาพ + ไอคอนตามประเภท (จาก V1) */}
-                <div className="campsite-card-img" style={{ background: imgBg(item.type) }}>
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={e => { e.currentTarget.style.display = 'none'; }}
-                    />
-                  ) : typeIcon(item.type)}
-                  <span className={`campsite-status ${item.status}`}>
-                    {item.status === 'available' ? 'ว่าง' : 'เต็ม'}
-                  </span>
-                </div>
+                {isFull ? (
+                  /* ── การ์ดเต็ม: กดไม่ได้ ── */
+                  <div className="campsite-card" style={{
+                    display: 'block', textDecoration: 'none',
+                    opacity: 0.65, cursor: 'not-allowed', userSelect: 'none',
+                    position: 'relative',
+                  }}>
+                    {/* overlay ป้ายไม่ว่าง */}
+                    <div style={{
+                      position: 'absolute', inset: 0, zIndex: 10,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      borderRadius: 'var(--radius-lg)',
+                      background: 'rgba(0,0,0,0.04)',
+                    }}>
+                      <span style={{
+                        background: '#e53935', color: '#fff',
+                        fontSize: 13, fontWeight: 700,
+                        padding: '6px 16px', borderRadius: 20,
+                        letterSpacing: 1,
+                      }}>🔒 ไม่ว่าง — ไม่สามารถจองได้</span>
+                    </div>
 
-                <div className="campsite-card-body">
-                  <p className="campsite-name">{item.name}</p>
-                  <p className="campsite-meta">
-                    รับได้ {item.capacity} คน
-                    {item.facility_icons && ' · ' + item.facility_icons}
-                  </p>
-                  <div className="campsite-footer">
-                    <span className="campsite-price">฿{Number(item.price_night).toLocaleString()}/คืน</span>
-                    <span className="type-badge">{item.type}</span>
+                    <div className="campsite-card-img" style={{ background: imgBg(item.type) }}>
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={e => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : typeIcon(item.type)}
+                      <span className={`campsite-status ${item.status}`}>
+                        เต็ม
+                      </span>
+                    </div>
+
+                    <div className="campsite-card-body">
+                      <p className="campsite-name">{item.name}</p>
+                      <p className="campsite-meta">
+                        รับได้ {item.capacity} คน
+                        {item.facility_icons && ' · ' + item.facility_icons}
+                      </p>
+                      <div className="campsite-footer">
+                        <span className="campsite-price">฿{Number(item.price_night).toLocaleString()}/คืน</span>
+                        <span className="type-badge">{item.type}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                ) : (
+                  /* ── การ์ดว่าง: คลิกได้ปกติ ── */
+                  <Link href={`/campsites/${item.id}`} className="campsite-card" style={{ display: 'block', textDecoration: 'none' }}>
+                    <div className="campsite-card-img" style={{ background: imgBg(item.type) }}>
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={e => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : typeIcon(item.type)}
+                      <span className={`campsite-status ${item.status}`}>
+                        ว่าง
+                      </span>
+                    </div>
 
-            </div>
-          ))}
+                    <div className="campsite-card-body">
+                      <p className="campsite-name">{item.name}</p>
+                      <p className="campsite-meta">
+                        รับได้ {item.capacity} คน
+                        {item.facility_icons && ' · ' + item.facility_icons}
+                      </p>
+                      <div className="campsite-footer">
+                        <span className="campsite-price">฿{Number(item.price_night).toLocaleString()}/คืน</span>
+                        <span className="type-badge">{item.type}</span>
+                      </div>
+                    </div>
+                  </Link>
+                )}
+
+              </div>
+            );
+          })}
         </div>
       )}
 

@@ -3,8 +3,9 @@ import { mysqlPool } from '@/utils/db';
 
 // GET /api/bookings/[id]
 export async function GET(_req, { params }) {
-  const { id } = await params;
+  const { id } = params;
   const pool = mysqlPool.promise();
+
   const [rows] = await pool.query(`
     SELECT b.*, c.name AS campsite_name, c.price_night
     FROM bookings b
@@ -13,23 +14,57 @@ export async function GET(_req, { params }) {
 
   if (!rows.length)
     return NextResponse.json({ message: 'Not found' }, { status: 404 });
+
   return NextResponse.json(rows[0]);
 }
 
-// PUT /api/bookings/[id] — เปลี่ยน status
+// PUT /api/bookings/[id] — เปลี่ยน status + sync campsite
 export async function PUT(request, { params }) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const { status } = await request.json();
     const pool = mysqlPool.promise();
 
+    // 1. อัปเดต booking
     await pool.query(
-      'UPDATE bookings SET status = ? WHERE id = ?', [status, id]
+      'UPDATE bookings SET status = ? WHERE id = ?',
+      [status, id]
     );
+
+    // 2. หา campsite_id
     const [rows] = await pool.query(
-      'SELECT * FROM bookings WHERE id = ?', [id]
+      'SELECT campsite_id FROM bookings WHERE id = ?',
+      [id]
     );
-    return NextResponse.json(rows[0]);
+
+    if (!rows.length) {
+      return NextResponse.json({ message: 'Booking not found' }, { status: 404 });
+    }
+
+    const campsiteId = rows[0].campsite_id;
+
+    // 3. sync สถานะ campsite
+    if (status === 'confirmed') {
+      await pool.query(
+        "UPDATE campsites SET status = 'full' WHERE id = ?",
+        [campsiteId]
+      );
+    }
+
+    if (status === 'cancelled' || status === 'checked_out') {
+      await pool.query(
+        "UPDATE campsites SET status = 'available' WHERE id = ?",
+        [campsiteId]
+      );
+    }
+
+    // 4. ส่งข้อมูลกลับ
+    const [updated] = await pool.query(
+      'SELECT * FROM bookings WHERE id = ?',
+      [id]
+    );
+
+    return NextResponse.json(updated[0]);
 
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -39,23 +74,27 @@ export async function PUT(request, { params }) {
 // PATCH /api/bookings/[id] — แก้ไขข้อมูลการจอง + คำนวณ total ใหม่
 export async function PATCH(request, { params }) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const { guest_name, phone, check_in, check_out, guests, status } = await request.json();
     const pool = mysqlPool.promise();
 
-    // ดึง campsite_id + price_night สำหรับคำนวณ total ใหม่
     const [bRows] = await pool.query(
       'SELECT campsite_id FROM bookings WHERE id = ?', [id]
     );
+
     if (!bRows.length)
       return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
+    const campsiteId = bRows[0].campsite_id;
+
     const [cs] = await pool.query(
-      'SELECT price_night FROM campsites WHERE id = ?', [bRows[0].campsite_id]
+      'SELECT price_night FROM campsites WHERE id = ?', [campsiteId]
     );
+
     const [diff] = await pool.query(
       'SELECT DATEDIFF(?, ?) AS nights', [check_out, check_in]
     );
+
     const nights = diff[0].nights;
     const total  = nights * Number(cs[0].price_night);
 
@@ -67,9 +106,25 @@ export async function PATCH(request, { params }) {
       [guest_name, phone || '', check_in, check_out, guests || 1, status, total, id]
     );
 
+    // 🔥 sync campsite เหมือนกัน
+    if (status === 'confirmed') {
+      await pool.query(
+        "UPDATE campsites SET status = 'full' WHERE id = ?",
+        [campsiteId]
+      );
+    }
+
+    if (status === 'cancelled') {
+      await pool.query(
+        "UPDATE campsites SET status = 'available' WHERE id = ?",
+        [campsiteId]
+      );
+    }
+
     const [rows] = await pool.query(
       'SELECT * FROM bookings WHERE id = ?', [id]
     );
+
     return NextResponse.json(rows[0]);
 
   } catch (e) {
@@ -80,11 +135,13 @@ export async function PATCH(request, { params }) {
 // DELETE /api/bookings/[id]
 export async function DELETE(_req, { params }) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const pool = mysqlPool.promise();
+
     await pool.query('DELETE FROM bookings WHERE id = ?', [id]);
+
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
-}
+}
