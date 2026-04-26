@@ -57,7 +57,7 @@ export async function GET() {
             WHERE status = 'pending')        AS pending_bookings,
           (SELECT COALESCE(SUM(total), 0)
             FROM bookings
-            WHERE status = 'confirmed')      AS total_revenue
+            WHERE status IN ('confirmed', 'checked_out'))      AS total_revenue
       `),
 
       // 2. ที่พักยอดนิยม (จำนวนจอง + รายได้)
@@ -86,6 +86,7 @@ export async function GET() {
           b.check_out,
           b.total,
           b.status,
+          b.created_at,
           c.name AS campsite_name
         FROM bookings b
         JOIN campsites c ON b.campsite_id = c.id
@@ -100,7 +101,7 @@ export async function GET() {
           COUNT(*)                        AS bookings,
           COALESCE(SUM(total), 0)         AS revenue
         FROM bookings
-        WHERE status = 'confirmed'
+        WHERE status IN ('confirmed', 'checked_out')
           AND check_in >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
         GROUP BY DATE_FORMAT(check_in, '%Y-%m')
         ORDER BY month ASC

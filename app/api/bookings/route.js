@@ -15,7 +15,7 @@ export async function GET() {
   const [rev] = await pool.query(`
     SELECT COALESCE(SUM(total), 0) AS revenue
     FROM bookings
-    WHERE status = 'confirmed'`);
+    WHERE status IN ('confirmed', 'checked_out')`);
 
   return NextResponse.json({
     bookings: rows,

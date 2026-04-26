@@ -40,8 +40,32 @@ export default function DashboardPage() {
 
   if (loading) return <div className="loading-text">กำลังโหลด...</div>;
 
-  const { summary, top_campsites, recent_bookings, monthly_revenue } = data;
-  const maxBookings = Math.max(...top_campsites.map(c => c.booking_count), 1);
+  // ป้องกัน crash ถ้า API return error หรือ data ผิดพลาด
+  if (!data || data.error) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--red-main)', marginBottom: '10px' }}>❌ เกิดข้อผิดพลาด</h2>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
+          {data?.error || 'ไม่สามารถดึงข้อมูลสรุปได้'}
+        </p>
+        <button 
+          onClick={() => { setLoading(true); loadData(); }}
+          className="btn btn-outline"
+        >
+          ลองใหม่อีกครั้ง
+        </button>
+      </div>
+    );
+  }
+
+  const { 
+    summary = {}, 
+    top_campsites = [], 
+    recent_bookings = [], 
+    monthly_revenue = [] 
+  } = data;
+
+  const maxBookings = Math.max(...top_campsites.map(c => c.booking_count || 0), 1);
 
   return (
     <div>
@@ -73,26 +97,26 @@ export default function DashboardPage() {
                  marginBottom:'28px' }}>
         <div className="summary-card">
           <div className="s-num">
-            {summary.total_campsites}
+            {summary.total_campsites || 0}
           </div>
           <div className="s-label">🏕️ ที่พักทั้งหมด</div>
         </div>
         <div className="summary-card">
           <div className="s-num earn">
-            ฿{Number(summary.total_revenue).toLocaleString()}
+            ฿{Number(summary.total_revenue || 0).toLocaleString()}
           </div>
           <div className="s-label">💰 รายได้รวม</div>
         </div>
         <div className="summary-card">
           <div className="s-num warn">
-            {summary.pending_bookings}
+            {summary.pending_bookings || 0}
           </div>
           <div className="s-label">⏳ รอยืนยัน</div>
         </div>
         <div className="summary-card">
           <div className="s-num"
             style={{ color:'var(--green-mid)' }}>
-            {summary.total_bookings}
+            {summary.total_bookings || 0}
           </div>
           <div className="s-label">📋 จองทั้งหมด</div>
         </div>
@@ -208,6 +232,9 @@ export default function DashboardPage() {
                             overflow:'hidden', textOverflow:'ellipsis',
                             whiteSpace:'nowrap' }}>
                   {b.campsite_name} · {b.check_in} → {b.check_out}
+                </p>
+                <p style={{ fontSize:'10px', color:'var(--text-sub)' }}>
+                  เวลาจอง: {new Date(b.created_at).toLocaleString('th-TH')}
                 </p>
               </div>
               <span style={{ fontSize:'12px', fontWeight:'600',

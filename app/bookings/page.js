@@ -6,6 +6,7 @@ import Link from 'next/link';
 const STATUS_LABELS = {
   pending:   'รอยืนยัน',
   confirmed: 'ยืนยันแล้ว',
+  checked_out: 'เช็คเอาต์แล้ว',
   cancelled: 'ยกเลิก',
 };
 
@@ -101,6 +102,37 @@ export default function BookingsPage() {
     load();
   }
 
+  /* ── Export CSV ── */
+  function exportToCSV() {
+    const headers = ['ID', 'ชื่อผู้จอง', 'เบอร์โทร', 'ที่พัก', 'เช็คอิน', 'เช็คเอาท์', 'จำนวนคืน', 'จำนวนคน', 'ยอดรวม (บาท)', 'สถานะ', 'เวลาจอง'];
+    const rows = bookings.map(b => {
+      const nights = nightsBetween(b.check_in, b.check_out);
+      return [
+        b.id,
+        b.guest_name,
+        b.phone || '-',
+        b.campsite_name,
+        formatDate(b.check_in),
+        formatDate(b.check_out),
+        nights,
+        b.guests,
+        b.total,
+        STATUS_LABELS[b.status] || b.status,
+        new Date(b.created_at).toLocaleString('th-TH')
+      ].map(val => `"${String(val).replace(/"/g, '""')}"`);
+    });
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `bookings_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   /* ── derived ── */
   const filtered = filter
     ? bookings.filter(b => b.status === filter)
@@ -117,7 +149,12 @@ export default function BookingsPage() {
         {/* ── Header ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700 }}>🧾 การจองทั้งหมด</h1>
-          <Link href="/campsites" className="btn btn-outline btn-sm">🏕️ ดูที่พัก</Link>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-outline btn-sm" onClick={exportToCSV}>
+              📥 Export CSV
+            </button>
+            <Link href="/campsites" className="btn btn-outline btn-sm">🏕️ ดูที่พัก</Link>
+          </div>
         </div>
 
         {/* ── Summary cards (จาก V1) ── */}
@@ -150,6 +187,7 @@ export default function BookingsPage() {
             { val: '',           label: 'ทั้งหมด' },
             { val: 'confirmed',  label: '✓ ยืนยันแล้ว' },
             { val: 'pending',    label: '⏳ รอยืนยัน' },
+            { val: 'checked_out', label: '🚪 เช็คเอาต์แล้ว' },
             { val: 'cancelled',  label: '✗ ยกเลิก' },
           ].map(({ val, label }) => (
             <button key={val}
@@ -203,6 +241,9 @@ export default function BookingsPage() {
                       {nights > 0 && ` (${nights} คืน)`}
                       {' · '}{b.guests} คน
                     </p>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                      เวลาจอง: {new Date(b.created_at).toLocaleString('th-TH')}
+                    </p>
                   </div>
 
                   {/* ราคา */}
@@ -226,6 +267,7 @@ export default function BookingsPage() {
                       }}>
                       <option value="pending">รอยืนยัน</option>
                       <option value="confirmed">ยืนยันแล้ว</option>
+                      <option value="checked_out">เช็คเอาต์แล้ว</option>
                       <option value="cancelled">ยกเลิก</option>
                     </select>
                   </div>
@@ -312,6 +354,7 @@ export default function BookingsPage() {
                 onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}>
                 <option value="pending">รอยืนยัน</option>
                 <option value="confirmed">ยืนยันแล้ว</option>
+                <option value="checked_out">เช็คเอาต์แล้ว</option>
                 <option value="cancelled">ยกเลิก</option>
               </select>
             </div>
