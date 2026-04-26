@@ -309,7 +309,7 @@ export default function CampsitesPage() {
               <div style={{ fontSize: 40, marginBottom: 8 }}>🏕️</div>
               <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>ยืนยันการลบที่พัก</h2>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                ต้องการลบ <strong>"{deleteTarget.name}"</strong> ใช่หรือไม่?
+                ต้องการลบ <strong>&quot;{deleteTarget.name}&quot;</strong> ใช่หรือไม่?
                 <br />การจองที่เกี่ยวข้องจะถูกลบออกด้วย
               </p>
             </div>
