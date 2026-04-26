@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const [checkingOut, setCheckingOut] = useState(null); // booking id ที่กำลัง process
 
   const loadData = () => {
-    fetch('/api/dashboard')
+    fetch('/api/dashboard?t=' + Date.now(), { cache: 'no-store' })
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); });
   };
@@ -217,54 +217,63 @@ export default function DashboardPage() {
             </p>
           ) : recent_bookings.map(b => (
             <div key={b.id}
-              style={{ display:'flex', alignItems:'center',
-                       gap:'10px', padding:'8px 12px',
+              style={{ padding:'14px 16px',
                        background:'var(--green-pale)',
-                       borderRadius:'8px', marginBottom:'6px',
+                       borderRadius:'10px', marginBottom:'10px',
                        border:'0.5px solid var(--border)' }}>
-              <div style={{ flex:1, minWidth:0 }}>
-                <p style={{ fontSize:'13px', fontWeight:'500',
-                            color:'var(--text-main)',
-                            marginBottom:'1px' }}>
+
+              {/* Row 1: ชื่อ + ราคา + badge */}
+              <div style={{ display:'flex', alignItems:'center',
+                            justifyContent:'space-between', marginBottom:'6px' }}>
+                <span style={{ fontSize:'14px', fontWeight:'600',
+                               color:'var(--text-main)' }}>
                   {b.guest_name}
-                </p>
-                <p style={{ fontSize:'11px', color:'var(--text-muted)',
-                            overflow:'hidden', textOverflow:'ellipsis',
-                            whiteSpace:'nowrap' }}>
-                  {b.campsite_name} · {b.check_in} → {b.check_out}
-                </p>
-                <p style={{ fontSize:'10px', color:'var(--text-sub)' }}>
-                  เวลาจอง: {new Date(b.created_at).toLocaleString('th-TH')}
-                </p>
+                </span>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px', flexShrink:0 }}>
+                  <span style={{ fontSize:'13px', fontWeight:'700',
+                                 color:'var(--green-main)' }}>
+                    ฿{Number(b.total).toLocaleString()}
+                  </span>
+                  <span className={`badge badge-${b.status}`}>
+                    {STATUS_TH[b.status]}
+                  </span>
+                </div>
               </div>
-              <span style={{ fontSize:'12px', fontWeight:'600',
-                              color:'var(--green-main)',
-                              flexShrink:0 }}>
-                ฿{Number(b.total).toLocaleString()}
-              </span>
-              <span className={`badge badge-${b.status}`}>
-                {STATUS_TH[b.status]}
-              </span>
-              {/* ปุ่มเช็คเอาต์ด้วยมือ — แสดงเฉพาะ confirmed */}
-              {b.status === 'confirmed' && (
-                <button
-                  onClick={() => handleCheckout(b.id)}
-                  disabled={checkingOut === b.id}
-                  style={{
-                    flexShrink: 0,
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--green-main)',
-                    background: checkingOut === b.id ? 'var(--green-pale)' : 'var(--green-main)',
-                    color: checkingOut === b.id ? 'var(--green-main)' : '#fff',
-                    cursor: checkingOut === b.id ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s',
-                  }}>
-                  {checkingOut === b.id ? '...' : '🚪 เช็คเอาต์'}
-                </button>
-              )}
+
+              {/* Row 2: ที่พัก + วันที่ */}
+              <div style={{ fontSize:'12px', color:'var(--text-muted)', marginBottom:'4px' }}>
+                📍 {b.campsite_name}
+              </div>
+              <div style={{ fontSize:'12px', color:'var(--text-muted)', marginBottom:'4px' }}>
+                📅 {new Date(b.check_in).toLocaleDateString('th-TH')} → {new Date(b.check_out).toLocaleDateString('th-TH')}
+              </div>
+
+              {/* Row 3: เวลาจอง + ปุ่ม */}
+              <div style={{ display:'flex', alignItems:'center',
+                            justifyContent:'space-between', marginTop:'8px' }}>
+                <span style={{ fontSize:'11px', color:'var(--text-sub)' }}>
+                  🕐 จองเมื่อ: {new Date(b.created_at).toLocaleString('th-TH')}
+                </span>
+                {b.status === 'confirmed' && (
+                  <button
+                    onClick={() => handleCheckout(b.id)}
+                    disabled={checkingOut === b.id}
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      padding: '5px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--green-main)',
+                      background: checkingOut === b.id ? 'var(--green-pale)' : 'var(--green-main)',
+                      color: checkingOut === b.id ? 'var(--green-main)' : '#fff',
+                      cursor: checkingOut === b.id ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                      flexShrink: 0,
+                    }}>
+                    {checkingOut === b.id ? '...' : '🚪 เช็คเอาต์'}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

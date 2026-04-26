@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { mysqlPool } from '@/utils/db';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/campsites?type=เต็นท์
 export async function GET(request) {
   const { searchParams } = new URL(request.url);

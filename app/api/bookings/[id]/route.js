@@ -3,7 +3,7 @@ import { mysqlPool } from '@/utils/db';
 
 // GET /api/bookings/[id]
 export async function GET(_req, { params }) {
-  const { id } = params;
+  const { id } = await params;
   const pool = mysqlPool.promise();
 
   const [rows] = await pool.query(`
@@ -21,7 +21,7 @@ export async function GET(_req, { params }) {
 // PUT /api/bookings/[id] — เปลี่ยน status + sync campsite
 export async function PUT(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { status } = await request.json();
     const pool = mysqlPool.promise();
 
@@ -44,7 +44,7 @@ export async function PUT(request, { params }) {
     const campsiteId = rows[0].campsite_id;
 
     // 3. sync สถานะ campsite
-    if (status === 'confirmed') {
+    if (status === 'confirmed' || status === 'pending') {
       await pool.query(
         "UPDATE campsites SET status = 'full' WHERE id = ?",
         [campsiteId]
@@ -52,10 +52,17 @@ export async function PUT(request, { params }) {
     }
 
     if (status === 'cancelled' || status === 'checked_out') {
-      await pool.query(
-        "UPDATE campsites SET status = 'available' WHERE id = ?",
+      const [active] = await pool.query(
+        `SELECT COUNT(*) AS cnt FROM bookings 
+         WHERE campsite_id = ? AND status IN ('confirmed', 'pending')`,
         [campsiteId]
       );
+      if (active[0].cnt === 0) {
+        await pool.query(
+          "UPDATE campsites SET status = 'available' WHERE id = ?",
+          [campsiteId]
+        );
+      }
     }
 
     // 4. ส่งข้อมูลกลับ
@@ -74,7 +81,7 @@ export async function PUT(request, { params }) {
 // PATCH /api/bookings/[id] — แก้ไขข้อมูลการจอง + คำนวณ total ใหม่
 export async function PATCH(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { guest_name, phone, check_in, check_out, guests, status } = await request.json();
     const pool = mysqlPool.promise();
 
@@ -107,18 +114,25 @@ export async function PATCH(request, { params }) {
     );
 
     // 🔥 sync campsite เหมือนกัน
-    if (status === 'confirmed') {
+    if (status === 'confirmed' || status === 'pending') {
       await pool.query(
         "UPDATE campsites SET status = 'full' WHERE id = ?",
         [campsiteId]
       );
     }
 
-    if (status === 'cancelled') {
-      await pool.query(
-        "UPDATE campsites SET status = 'available' WHERE id = ?",
+    if (status === 'cancelled' || status === 'checked_out') {
+      const [active] = await pool.query(
+        `SELECT COUNT(*) AS cnt FROM bookings 
+         WHERE campsite_id = ? AND status IN ('confirmed', 'pending')`,
         [campsiteId]
       );
+      if (active[0].cnt === 0) {
+        await pool.query(
+          "UPDATE campsites SET status = 'available' WHERE id = ?",
+          [campsiteId]
+        );
+      }
     }
 
     const [rows] = await pool.query(
@@ -135,10 +149,27 @@ export async function PATCH(request, { params }) {
 // DELETE /api/bookings/[id]
 export async function DELETE(_req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const pool = mysqlPool.promise();
 
+    const [rows] = await pool.query('SELECT campsite_id FROM bookings WHERE id = ?', [id]);
+
     await pool.query('DELETE FROM bookings WHERE id = ?', [id]);
+
+    if (rows.length > 0) {
+      const campsiteId = rows[0].campsite_id;
+      const [active] = await pool.query(
+        `SELECT COUNT(*) AS cnt FROM bookings 
+         WHERE campsite_id = ? AND status IN ('confirmed', 'pending')`,
+        [campsiteId]
+      );
+      if (active[0].cnt === 0) {
+        await pool.query(
+          "UPDATE campsites SET status = 'available' WHERE id = ?",
+          [campsiteId]
+        );
+      }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e) {

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { mysqlPool } from '@/utils/db';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const pool = mysqlPool.promise();
@@ -28,7 +30,7 @@ export async function GET() {
       for (const csId of campsiteIds) {
         const [active] = await pool.query(
           `SELECT COUNT(*) AS cnt FROM bookings
-           WHERE campsite_id = ? AND status = 'confirmed'`,
+           WHERE campsite_id = ? AND status IN ('confirmed', 'pending')`,
           [csId]
         );
         if (active[0].cnt === 0) {

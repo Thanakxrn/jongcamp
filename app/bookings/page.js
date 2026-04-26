@@ -173,12 +173,6 @@ export default function BookingsPage() {
             <div className="s-num" style={{ color: 'var(--green-dark)' }}>{confirmedCount}</div>
             <div className="s-label">ยืนยันแล้ว</div>
           </div>
-          <div className="summary-card">
-            <div className="s-num" style={{ fontSize: 22, color: 'var(--green-dark)' }}>
-              ฿{Number(revenue).toLocaleString()}
-            </div>
-            <div className="s-label">รายได้รวม</div>
-          </div>
         </div>
 
         {/* ── Filter chips ── */}

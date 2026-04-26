@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { mysqlPool } from '@/utils/db';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/campsites/[id]
 export async function GET(_req, { params }) {
   const { id } = await params;

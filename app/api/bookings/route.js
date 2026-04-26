@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { mysqlPool } from '@/utils/db';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/bookings
 export async function GET() {
   const pool = mysqlPool.promise();
@@ -75,6 +77,12 @@ export async function POST(request) {
       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [campsite_id, guest_name, phone || '',
        check_in, check_out, guests || 1, total]
+    );
+
+    // อัปเดตสถานะที่พักเป็น full ทันทีที่มีการจอง
+    await pool.query(
+      "UPDATE campsites SET status = 'full' WHERE id = ?",
+      [campsite_id]
     );
 
     const [rows] = await pool.query(
